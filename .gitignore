@@ -1,8 +1,8 @@
 # Sensitive Configuration
-config.json
+./config.json
 
 # Databases and Connection Mappings
-databases/
+./databases/
 *.json
 
 # Logs
