@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import requests
 
@@ -26,6 +27,51 @@ def load_json(path, default=None):
 def save_json(path, data):
     with open(path, "w") as f:
         json.dump(data, f, indent=4)
+
+
+# -----------------------------
+# MESSAGE LANGUAGE CHECK
+# -----------------------------
+def is_english_only(text):
+    """
+    Returns True if the text contains ONLY English characters, 
+    numbers, common punctuation, and emojis.
+    """
+    # If the text is empty (e.g., pure media with no caption), treat as valid
+    if not text:
+        return True
+
+    # Regex breakdown:
+    # ^[ -~]+$ matches any string consisting entirely of printable ASCII characters
+    # (characters from space ' ' to tilde '~'). This covers all English letters, 
+    # numbers, standard punctuation, and spaces.
+    #
+    # To allow common symbols/emojis, we use a broader approach: 
+    # checking if it contains non-latin characters.
+    
+    # This pattern matches characters belonging to non-Latin scripts 
+    # (like Arabic, Cyrillic, Devanagari, Han, etc.)
+    # Note: It allows standard English, numbers, punctuation, and emojis.
+    non_english_pattern = re.compile(r'[\u0600-\u06FF\u0D00-\u0D7F\u0900-\u097F\u4e00-\u9fff]')
+    
+    # Alternative strict approach: Allow ONLY ASCII + common whitespace
+    # if not re.match(r'^[\x00-\x7F]*$', text): return False
+    
+    # Let's use a robust ASCII-based check that drops non-ASCII text 
+    # but gently allows emojis if needed. 
+    # A highly reliable way for a Telegram bot is checking the ratio of English text:
+    try:
+        text.encode('ascii')
+        return True # It's purely English/ASCII characters
+    except UnicodeEncodeError:
+        # If it has non-ASCII, check if those characters are non-English alphabets
+        # (This prevents blocking messages just because they contain an emoji)
+        for char in text:
+            cp = ord(char)
+            # Ranges for Arabic (\u0600-\u06FF) and Malayalam (\u0D00-\u0D7F) as examples
+            if (0x0600 <= cp <= 0x06FF) or (0x0D00 <= cp <= 0x0D7F) or (0x0900 <= cp <= 0x097F):
+                return False # Found non-English script character
+        return True
 
 
 # -----------------------------
@@ -108,6 +154,18 @@ def process_logic(msg, bot_name, admin_id, token):
                     "• !save [name] (reply)\n"
                     "• ?name\n"
                 )
+            }
+        
+        # Extract text/caption safely
+        text = (msg.get("text") or msg.get("caption") or "").strip()
+        
+        # --- NON-ENGLISH FILTER ---
+        if text and not is_english_only(text):
+            # Delete the message if the bot is admin in a group
+            return {
+                "type": "text",
+                "data": "⚠️ Only English is allowed in this group.",
+                "delete_original": True
             }
 
         return None  # ignore other private messages
