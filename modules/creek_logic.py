@@ -304,7 +304,7 @@ def process_logic(msg, bot_name, admin_id, token):
         # Delete the message if the bot is admin in a group
         return {
             "type": "text",
-            "data": "⚠️ Only English is allowed in this group.",
+            "data": "⚠️ Only English is allowed in this group to include everyone.",
             "delete_original": True
         }
 
