@@ -1,0 +1,15 @@
+# Sensitive Configuration
+config.json
+
+# Databases and Connection Mappings
+databases/
+*.json
+
+# Logs
+bot_logs.txt
+activity_log.json
+sync_log.txt
+
+# Python Cache
+__pycache__/
+*.py[cod]
