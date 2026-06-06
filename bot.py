@@ -26,7 +26,7 @@ CONFIG = load_config()
 BOT_ADMIN = str(CONFIG.get("bot_admin_id", ""))
 
 LOG_FILE = os.path.join(BASE_DIR, "databases/activity_log.json")
-BOT_LOG_FILE = os.path.join(BASE_DIR, "bot_logs.txt")
+BOT_LOG_FILE = os.path.join(BASE_DIR, "bot_log.txt")
 
 def save_to_json(entry):
     try:
