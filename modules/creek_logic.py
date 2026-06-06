@@ -132,7 +132,7 @@ def process_logic(msg, bot_name, admin_id, token):
     cmd = text.lower().strip()
 
     # =========================================================
-    # 💬 PRIVATE CHAT LOGIC (RESTORED)
+    # 💬 PRIVATE CHAT LOGIC
     # =========================================================
     if chat_type == "private":
         if cmd == "/start":
@@ -146,9 +146,6 @@ def process_logic(msg, bot_name, admin_id, token):
                 "type": "text",
                 "data": (
                     "📂 Commands:\n\n"
-                    "👥 Group:\n"
-                    "• !groups (if implemented in tools layer)\n"
-                    "• !connect (in group)\n\n"
                     "📝 Notes:\n"
                     "• !notes\n"
                     "• !save [name] (reply)\n"
@@ -156,18 +153,6 @@ def process_logic(msg, bot_name, admin_id, token):
                 )
             }
         
-        # Extract text/caption safely
-        text = (msg.get("text") or msg.get("caption") or "").strip()
-        
-        # --- NON-ENGLISH FILTER ---
-        if text and not is_english_only(text):
-            # Delete the message if the bot is admin in a group
-            return {
-                "type": "text",
-                "data": "⚠️ Only English is allowed in this group.",
-                "delete_original": True
-            }
-
         return None  # ignore other private messages
 
     # =========================================================
@@ -310,5 +295,17 @@ def process_logic(msg, bot_name, admin_id, token):
             return {"type": "text", "data": f"🗑 Deleted `{note_name}`"}
 
         return {"type": "text", "data": "❌ Not found."}
+
+    # Extract text/caption safely
+    text = (msg.get("text") or msg.get("caption") or "").strip()
+        
+    # --- NON-ENGLISH FILTER ---
+    if text and not is_english_only(text):
+        # Delete the message if the bot is admin in a group
+        return {
+            "type": "text",
+            "data": "⚠️ Only English is allowed in this group.",
+            "delete_original": True
+        }
 
     return None
