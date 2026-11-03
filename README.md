@@ -67,35 +67,45 @@ Paste the following script:
 ```bash
 #!/system/bin/sh
 
-# Define log path
 LOG_FILE="/data/adb/service.d/alpine_boot_log.txt"
+CHROOT_BIN="/data/data/com.termux/files/usr/bin/chroot-distro"
 
-# Function to log messages with timestamps
 log_msg() {
     echo "$(date "+%Y-%m-%d %H:%M:%S") - $1" >> "$LOG_FILE"
 }
 
-echo "
-        ----- Script Started -----" >> "$LOG_FILE"
+log_msg "----- Script Started -----"
 
-# 60s delay
+# Wait for storage and system stability (ensure Termux files are accessible)
 log_msg "Waiting 60s for system stability..."
 sleep 60
 
+# Check if Termux environment actually exists before proceeding
+if [ ! -f "$CHROOT_BIN" ]; then
+    log_msg "ERROR: Termux chroot-distro binary not found at $CHROOT_BIN"
+    exit 1
+fi
+
+# Export minimal required environment variables
+export PATH="/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/sbin:$PATH"
+export HOME="/data/data/com.termux/files/home"
+export PREFIX="/data/data/com.termux/files/usr"
+
 # Attempt to mount
 log_msg "Attempting to mount Alpine..."
-if chroot-distro mount alpine >> "$LOG_FILE" 2>&1; then
+if "$CHROOT_BIN" mount alpine >> "$LOG_FILE" 2>&1; then
     log_msg "SUCCESS: Alpine mounted."
 else
     log_msg "ERROR: Alpine mount failed."
+    exit 1
 fi
 
-# Attempt to login/start background services
-log_msg "Attempting to login to Alpine..."
-if chroot-distro login alpine >> "$LOG_FILE" 2>&1; then
+# Run service or command check inside Alpine
+log_msg "Attempting to initialize Alpine environment..."
+if "$CHROOT_BIN" run alpine -- /bin/sh -c "echo 'Alpine container online'" >> "$LOG_FILE" 2>&1; then
     log_msg "Alpine is up"
 else
-    log_msg "ERROR: Alpine login failed."
+    log_msg "ERROR: Alpine execution failed."
 fi
 
 log_msg "--- Script Finished ---"
