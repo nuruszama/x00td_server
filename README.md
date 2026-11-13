@@ -67,48 +67,38 @@ Paste the following script:
 ```bash
 #!/system/bin/sh
 
+# Define log path
 LOG_FILE="/data/adb/service.d/alpine_boot_log.txt"
-CHROOT_BIN="/data/data/com.termux/files/usr/bin/chroot-distro"
 
+# Function to log messages with timestamps
 log_msg() {
     echo "$(date "+%Y-%m-%d %H:%M:%S") - $1" >> "$LOG_FILE"
 }
 
-log_msg "----- Script Started -----"
+echo " " >> "$LOG_FILE"
+log_msg "        ----- Script Started -----"
 
-# Wait for storage and system stability (ensure Termux files are accessible)
+# 60s delay for storage and system stability
 log_msg "Waiting 60s for system stability..."
 sleep 60
 
-# Check if Termux environment actually exists before proceeding
-if [ ! -f "$CHROOT_BIN" ]; then
-    log_msg "ERROR: Termux chroot-distro binary not found at $CHROOT_BIN"
-    exit 1
-fi
-
-# Export minimal required environment variables
-export PATH="/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/sbin:$PATH"
-export HOME="/data/data/com.termux/files/home"
-export PREFIX="/data/data/com.termux/files/usr"
-
 # Attempt to mount
 log_msg "Attempting to mount Alpine..."
-if "$CHROOT_BIN" mount alpine >> "$LOG_FILE" 2>&1; then
+if chroot-distro mount alpine >> "$LOG_FILE" 2>&1; then
     log_msg "SUCCESS: Alpine mounted."
 else
     log_msg "ERROR: Alpine mount failed."
-    exit 1
 fi
 
-# Run service or command check inside Alpine
-log_msg "Attempting to initialize Alpine environment..."
-if "$CHROOT_BIN" run alpine -- /bin/sh -c "echo 'Alpine container online'" >> "$LOG_FILE" 2>&1; then
+# Attempt to login/start background services
+log_msg "Attempting to login to Alpine..."
+if chroot-distro login alpine >> "$LOG_FILE" 2>&1; then
     log_msg "Alpine is up"
 else
-    log_msg "ERROR: Alpine execution failed."
+    log_msg "ERROR: Alpine login failed."
 fi
 
-log_msg "--- Script Finished ---"
+log_msg "        --- Script Finished ---"
 ```
 
 Make the script executable:
@@ -306,16 +296,18 @@ log_msg(){
 }
 
 # Start Samba if not already running
+log_msg "Initiating Samba services."
 if ! pgrep -x "smbd" > /dev/null; then
     smbd -D
     nmbd -D
-    log msg "Samba services started."
+    log_msg "Samba services started."
 fi
 
 # Start the Python bot if not already running
+log_msg "Initiating TG BOT services."
 if ! pgrep -f "bot.py" > /dev/null; then
     nohup python3 /home/x00td/my_bot/bot.py > /home/x00td/my_bot/bot_log.txt 2>&1 &
-    log msg "Python bot started in background."
+    log_msg "Python bot started in background."
 fi
 ```
 
